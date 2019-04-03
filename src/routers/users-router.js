@@ -1,7 +1,43 @@
-const express = require('express');
-const router = new express.Router();
-const auth = require('../middleware/auth');
+const router = require('express').Router();
 const User = require('../models/user-model');
+
+const auth = require('../middleware/auth');
+const multer = require('multer');
+const sharp = require('sharp');
+const upload = multer({
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|webp|tiff)$/)) {
+            cb(new Error('Invalid file type!'));
+        }
+        cb(undefined, true);
+    }
+});
+router.post('/users/avatar', auth, upload.single('avatar'), async (req, res) => {
+    try {
+        req.user.avatar = sharp(req.file.buffer).webp().toBuffer();
+        const size = await avatar.metadata().size;
+        if (size > 1000000) {
+            throw new Error();
+        }
+        await req.user.save();
+        return res.status(200).send();
+    } catch (e) {
+        return res.status(400).send(e.message);
+    }
+});
+router.get('/users/:id/avatar', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if(!user || !user.avatar){
+            throw new Error();
+        }
+        res.set('Content-Type', 'image/webp');
+        res.send(user.avatar);
+    }catch (e) {
+        return res.status(400).send(e.message);
+    }
+});
+
 
 router.post('/users/login', async (req, res) => {
     try {
